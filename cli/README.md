@@ -1,8 +1,6 @@
 Tree-sitter CLI
 ===============
 
-[![Build Status](https://travis-ci.org/tree-sitter/tree-sitter.svg?branch=master)](https://travis-ci.org/tree-sitter/tree-sitter)
-[![Build status](https://ci.appveyor.com/api/projects/status/vtmbd6i92e97l55w/branch/master?svg=true)](https://ci.appveyor.com/project/maxbrunsfeld/tree-sitter/branch/master)
 [![Crates.io](https://img.shields.io/crates/v/tree-sitter-cli.svg)](https://crates.io/crates/tree-sitter-cli)
 
 The Tree-sitter CLI allows you to develop, test, and use Tree-sitter grammars from the command line. It works on MacOS, Linux, and Windows.
@@ -36,4 +34,4 @@ The `tree-sitter` binary itself has no dependencies, but specific commands have 
 
 * `test` - The `tree-sitter test` command will run the unit tests for the Tree-sitter parser in the current working directory. See [the documentation](http://tree-sitter.github.io/tree-sitter/creating-parsers) for more information.
 
-* `parse` - The `tree-sitter parse` command will parse a file (or list of file) using Tree-sitter parsers.
+* `parse` - The `tree-sitter parse` command will parse a file (or list of files) using Tree-sitter parsers.

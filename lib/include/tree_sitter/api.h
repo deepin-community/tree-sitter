@@ -21,7 +21,7 @@ extern "C" {
  * The Tree-sitter library is generally backwards-compatible with languages
  * generated using older CLI versions, but is not forwards-compatible.
  */
-#define TREE_SITTER_LANGUAGE_VERSION 13
+#define TREE_SITTER_LANGUAGE_VERSION 14
 
 /**
  * The earliest ABI version that is supported by the current version of the
@@ -106,6 +106,14 @@ typedef struct {
   uint32_t index;
 } TSQueryCapture;
 
+typedef enum {
+  TSQuantifierZero = 0, // must match the array initialization value
+  TSQuantifierZeroOrOne,
+  TSQuantifierZeroOrMore,
+  TSQuantifierOne,
+  TSQuantifierOneOrMore,
+} TSQuantifier;
+
 typedef struct {
   uint32_t id;
   uint16_t pattern_index;
@@ -131,6 +139,7 @@ typedef enum {
   TSQueryErrorField,
   TSQueryErrorCapture,
   TSQueryErrorStructure,
+  TSQueryErrorLanguage,
 } TSQueryError;
 
 /********************/
@@ -179,9 +188,7 @@ const TSLanguage *ts_parser_language(const TSParser *self);
  * If `length` is zero, then the entire document will be parsed. Otherwise,
  * the given ranges must be ordered from earliest to latest in the document,
  * and they must not overlap. That is, the following must hold for all
- * `i` < `length - 1`:
- *
- *     ranges[i].end_byte <= ranges[i + 1].start_byte
+ * `i` < `length - 1`: ranges[i].end_byte <= ranges[i + 1].start_byte
  *
  * If this requirement is not satisfied, the operation will fail, the ranges
  * will not be assigned, and this function will return `false`. On success,
@@ -360,9 +367,26 @@ void ts_tree_delete(TSTree *self);
 TSNode ts_tree_root_node(const TSTree *self);
 
 /**
+ * Get the root node of the syntax tree, but with its position
+ * shifted forward by the given offset.
+ */
+TSNode ts_tree_root_node_with_offset(
+  const TSTree *self,
+  uint32_t offset_bytes,
+  TSPoint offset_point
+);
+
+/**
  * Get the language that was used to parse the syntax tree.
  */
 const TSLanguage *ts_tree_language(const TSTree *);
+
+/**
+ * Get the array of included ranges that was used to parse the syntax tree.
+ *
+ * The returned pointer must be freed by the caller.
+ */
+TSRange *ts_tree_included_ranges(const TSTree *, uint32_t *length);
 
 /**
  * Edit the syntax tree to keep it in sync with source code that has been
@@ -396,7 +420,7 @@ TSRange *ts_tree_get_changed_ranges(
 /**
  * Write a DOT graph describing the syntax tree to the given file.
  */
-void ts_tree_print_dot_graph(const TSTree *, FILE *);
+void ts_tree_print_dot_graph(const TSTree *, int file_descriptor);
 
 /******************/
 /* Section - Node */
@@ -618,7 +642,7 @@ TSNode ts_tree_cursor_current_node(const TSTreeCursor *);
 const char *ts_tree_cursor_current_field_name(const TSTreeCursor *);
 
 /**
- * Get the field name of the tree cursor's current node.
+ * Get the field id of the tree cursor's current node.
  *
  * This returns zero if the current node doesn't have a field.
  * See also `ts_node_child_by_field_id`, `ts_language_field_id_for_name`.
@@ -726,10 +750,26 @@ const TSQueryPredicateStep *ts_query_predicates_for_pattern(
   uint32_t *length
 );
 
-bool ts_query_step_is_definite(
-  const TSQuery *self,
-  uint32_t byte_offset
-);
+/*
+ * Check if the given pattern in the query has a single root node.
+ */
+bool ts_query_is_pattern_rooted(const TSQuery *self, uint32_t pattern_index);
+
+/*
+ * Check if the given pattern in the query is 'non local'.
+ *
+ * A non-local pattern has multiple root nodes and can match within a
+ * repeating sequence of nodes, as specified by the grammar. Non-local
+ * patterns disable certain optimizations that would otherwise be possible
+ * when executing a query on a specific range of a syntax tree.
+ */
+bool ts_query_is_pattern_non_local(const TSQuery *self, uint32_t pattern_index);
+
+/*
+ * Check if a given pattern is guaranteed to match once a given step is reached.
+ * The step is specified by its byte offset in the query's source code.
+ */
+bool ts_query_is_pattern_guaranteed_at_step(const TSQuery *self, uint32_t byte_offset);
 
 /**
  * Get the name and length of one of the query's captures, or one of the
@@ -741,6 +781,17 @@ const char *ts_query_capture_name_for_id(
   uint32_t id,
   uint32_t *length
 );
+
+/**
+ * Get the quantifier of the query's captures. Each capture is * associated
+ * with a numeric id based on the order that it appeared in the query's source.
+ */
+TSQuantifier ts_query_capture_quantifier_for_id(
+  const TSQuery *,
+  uint32_t pattern_id,
+  uint32_t capture_id
+);
+
 const char *ts_query_string_value_for_id(
   const TSQuery *,
   uint32_t id,
@@ -896,6 +947,33 @@ TSSymbolType ts_language_symbol_type(const TSLanguage *, TSSymbol);
  * See also `ts_parser_set_language`.
  */
 uint32_t ts_language_version(const TSLanguage *);
+
+/**********************************/
+/* Section - Global Configuration */
+/**********************************/
+
+/**
+ * Set the allocation functions used by the library.
+ *
+ * By default, Tree-sitter uses the standard libc allocation functions,
+ * but aborts the process when an allocation fails. This function lets
+ * you supply alternative allocation functions at runtime.
+ * 
+ * If you pass `NULL` for any parameter, Tree-sitter will switch back to
+ * its default implementation of that function.
+ * 
+ * If you call this function after the library has already been used, then
+ * you must ensure that either:
+ *  1. All the existing objects have been freed.
+ *  2. The new allocator shares its state with the old one, so it is capable
+ *     of freeing memory that was allocated by the old allocator.
+ */
+void ts_set_allocator(
+  void *(*new_malloc)(size_t),
+	void *(*new_calloc)(size_t, size_t),
+	void *(*new_realloc)(void *, size_t),
+	void (*new_free)(void *)
+);
 
 #ifdef __cplusplus
 }

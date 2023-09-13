@@ -1,11 +1,17 @@
-use super::helpers::fixtures::get_language;
+use super::helpers::{
+    allocations,
+    fixtures::get_language,
+    query_helpers::{Match, Pattern},
+    ITERATION_COUNT,
+};
 use lazy_static::lazy_static;
-use std::env;
-use std::fmt::Write;
+use rand::{prelude::StdRng, SeedableRng};
+use std::{env, fmt::Write};
 use tree_sitter::{
-    allocations, Language, Node, Parser, Point, Query, QueryCapture, QueryCursor, QueryError,
+    CaptureQuantifier, Language, Node, Parser, Point, Query, QueryCapture, QueryCursor, QueryError,
     QueryErrorKind, QueryMatch, QueryPredicate, QueryPredicateArg, QueryProperty,
 };
+use unindent::Unindent;
 
 lazy_static! {
     static ref EXAMPLE_FILTER: Option<String> = env::var("TREE_SITTER_TEST_EXAMPLE_FILTER").ok();
@@ -78,6 +84,7 @@ fn test_query_errors_on_invalid_syntax() {
             .join("\n")
         );
 
+        // Empty tree pattern
         assert_eq!(
             Query::new(language, r#"((identifier) ()"#)
                 .unwrap_err()
@@ -88,6 +95,8 @@ fn test_query_errors_on_invalid_syntax() {
             ]
             .join("\n")
         );
+
+        // Empty alternation
         assert_eq!(
             Query::new(language, r#"((identifier) [])"#)
                 .unwrap_err()
@@ -98,6 +107,8 @@ fn test_query_errors_on_invalid_syntax() {
             ]
             .join("\n")
         );
+
+        // Unclosed sibling expression with predicate
         assert_eq!(
             Query::new(language, r#"((identifier) (#a)"#)
                 .unwrap_err()
@@ -108,6 +119,8 @@ fn test_query_errors_on_invalid_syntax() {
             ]
             .join("\n")
         );
+
+        // Unclosed predicate
         assert_eq!(
             Query::new(language, r#"((identifier) @x (#eq? @x a"#)
                 .unwrap_err()
@@ -144,6 +157,7 @@ fn test_query_errors_on_invalid_syntax() {
             .join("\n")
         );
 
+        // Unclosed alternation within a tree
         // tree-sitter/tree-sitter/issues/968
         assert_eq!(
             Query::new(get_language("c"), r#"(parameter_list [ ")" @foo)"#)
@@ -152,6 +166,22 @@ fn test_query_errors_on_invalid_syntax() {
             [
                 r#"(parameter_list [ ")" @foo)"#,
                 r#"                          ^"#
+            ]
+            .join("\n")
+        );
+
+        // Unclosed tree within an alternation
+        // tree-sitter/tree-sitter/issues/1436
+        assert_eq!(
+            Query::new(
+                get_language("python"),
+                r#"[(unary_operator (_) @operand) (not_operator (_) @operand]"#
+            )
+            .unwrap_err()
+            .message,
+            [
+                r#"[(unary_operator (_) @operand) (not_operator (_) @operand]"#,
+                r#"                                                         ^"#
             ]
             .join("\n")
         );
@@ -1660,6 +1690,66 @@ fn test_query_matches_with_too_many_permutations_to_track() {
 }
 
 #[test]
+fn test_query_sibling_patterns_dont_match_children_of_an_error() {
+    allocations::record(|| {
+        let language = get_language("rust");
+        let query = Query::new(
+            language,
+            r#"
+            ("{" @open "}" @close)
+
+            [
+              (line_comment)
+              (block_comment)
+            ] @comment
+
+            ("<" @first "<" @second)
+            "#,
+        )
+        .unwrap();
+
+        // Most of the document will fail to parse, resulting in a
+        // large number of tokens that are *direct* children of an
+        // ERROR node.
+        //
+        // These children should still match, unless they are part
+        // of a "non-rooted" pattern, in which there are multiple
+        // top-level sibling nodes. Those patterns should not match
+        // directly inside of an error node, because the contents of
+        // an error node are not syntactically well-structured, so we
+        // would get many spurious matches.
+        let source = "
+            fn a() {}
+
+            <<<<<<<<<< add pub b fn () {}
+            // comment 1
+            pub fn b() {
+            /* comment 2 */
+            ==========
+            pub fn c() {
+            // comment 3
+            >>>>>>>>>> add pub c fn () {}
+            }
+        ";
+
+        let mut parser = Parser::new();
+        parser.set_language(language).unwrap();
+        let tree = parser.parse(&source, None).unwrap();
+        let mut cursor = QueryCursor::new();
+        let matches = cursor.matches(&query, tree.root_node(), source.as_bytes());
+        assert_eq!(
+            collect_matches(matches, &query, source),
+            &[
+                (0, vec![("open", "{"), ("close", "}")]),
+                (1, vec![("comment", "// comment 1")]),
+                (1, vec![("comment", "/* comment 2 */")]),
+                (1, vec![("comment", "// comment 3")]),
+            ],
+        );
+    });
+}
+
+#[test]
 fn test_query_matches_with_alternatives_and_too_many_permutations_to_track() {
     allocations::record(|| {
         let language = get_language("javascript");
@@ -1786,7 +1876,6 @@ fn test_query_matches_within_byte_range() {
             cursor
                 .set_byte_range(0..8)
                 .matches(&query, tree.root_node(), source.as_bytes());
-
         assert_eq!(
             collect_matches(matches, &query, source),
             &[
@@ -1800,7 +1889,6 @@ fn test_query_matches_within_byte_range() {
             cursor
                 .set_byte_range(5..15)
                 .matches(&query, tree.root_node(), source.as_bytes());
-
         assert_eq!(
             collect_matches(matches, &query, source),
             &[
@@ -1814,7 +1902,6 @@ fn test_query_matches_within_byte_range() {
             cursor
                 .set_byte_range(12..0)
                 .matches(&query, tree.root_node(), source.as_bytes());
-
         assert_eq!(
             collect_matches(matches, &query, source),
             &[
@@ -1832,20 +1919,28 @@ fn test_query_matches_within_point_range() {
         let language = get_language("javascript");
         let query = Query::new(language, "(identifier) @element").unwrap();
 
-        let source = "[a, b,\n c, d,\n e, f,\n g]";
+        let source = "
+            [
+              a, b,
+              c, d,
+              e, f,
+              g, h,
+              i, j,
+              k, l,
+            ]
+        "
+        .unindent();
 
         let mut parser = Parser::new();
         parser.set_language(language).unwrap();
         let tree = parser.parse(&source, None).unwrap();
-
         let mut cursor = QueryCursor::new();
 
         let matches = cursor
-            .set_point_range(Point::new(0, 0)..Point::new(1, 3))
+            .set_point_range(Point::new(1, 0)..Point::new(2, 3))
             .matches(&query, tree.root_node(), source.as_bytes());
-
         assert_eq!(
-            collect_matches(matches, &query, source),
+            collect_matches(matches, &query, &source),
             &[
                 (0, vec![("element", "a")]),
                 (0, vec![("element", "b")]),
@@ -1854,11 +1949,10 @@ fn test_query_matches_within_point_range() {
         );
 
         let matches = cursor
-            .set_point_range(Point::new(1, 0)..Point::new(2, 3))
+            .set_point_range(Point::new(2, 0)..Point::new(3, 3))
             .matches(&query, tree.root_node(), source.as_bytes());
-
         assert_eq!(
-            collect_matches(matches, &query, source),
+            collect_matches(matches, &query, &source),
             &[
                 (0, vec![("element", "c")]),
                 (0, vec![("element", "d")]),
@@ -1866,16 +1960,19 @@ fn test_query_matches_within_point_range() {
             ]
         );
 
+        // Zero end point is treated like no end point.
         let matches = cursor
-            .set_point_range(Point::new(2, 1)..Point::new(0, 0))
+            .set_point_range(Point::new(4, 1)..Point::new(0, 0))
             .matches(&query, tree.root_node(), source.as_bytes());
-
         assert_eq!(
-            collect_matches(matches, &query, source),
+            collect_matches(matches, &query, &source),
             &[
-                (0, vec![("element", "e")]),
-                (0, vec![("element", "f")]),
                 (0, vec![("element", "g")]),
+                (0, vec![("element", "h")]),
+                (0, vec![("element", "i")]),
+                (0, vec![("element", "j")]),
+                (0, vec![("element", "k")]),
+                (0, vec![("element", "l")]),
             ]
         );
     });
@@ -1975,6 +2072,68 @@ fn test_query_matches_with_unrooted_patterns_intersecting_byte_range() {
 }
 
 #[test]
+fn test_query_matches_with_wildcard_at_root_intersecting_byte_range() {
+    allocations::record(|| {
+        let language = get_language("python");
+        let query = Query::new(
+            language,
+            "
+            [
+                (_ body: (block))
+                (_ consequence: (block))
+            ] @indent
+            ",
+        )
+        .unwrap();
+
+        let source = "
+            class A:
+                def b():
+                    if c:
+                        d
+                    else:
+                        e
+        "
+        .trim();
+
+        let mut parser = Parser::new();
+        parser.set_language(language).unwrap();
+        let tree = parser.parse(source, None).unwrap();
+        let mut cursor = QueryCursor::new();
+
+        // After the first line of the class definition
+        let offset = source.find("A:").unwrap() + 2;
+        let matches = cursor
+            .set_byte_range(offset..offset)
+            .matches(&query, tree.root_node(), source.as_bytes())
+            .map(|mat| mat.captures[0].node.kind())
+            .collect::<Vec<_>>();
+        assert_eq!(matches, &["class_definition"]);
+
+        // After the first line of the function definition
+        let offset = source.find("b():").unwrap() + 4;
+        let matches = cursor
+            .set_byte_range(offset..offset)
+            .matches(&query, tree.root_node(), source.as_bytes())
+            .map(|mat| mat.captures[0].node.kind())
+            .collect::<Vec<_>>();
+        assert_eq!(matches, &["class_definition", "function_definition"]);
+
+        // After the first line of the if statement
+        let offset = source.find("c:").unwrap() + 2;
+        let matches = cursor
+            .set_byte_range(offset..offset)
+            .matches(&query, tree.root_node(), source.as_bytes())
+            .map(|mat| mat.captures[0].node.kind())
+            .collect::<Vec<_>>();
+        assert_eq!(
+            matches,
+            &["class_definition", "function_definition", "if_statement"]
+        );
+    });
+}
+
+#[test]
 fn test_query_captures_within_byte_range_assigned_after_iterating() {
     allocations::record(|| {
         let language = get_language("rust");
@@ -2055,6 +2214,57 @@ fn test_query_captures_within_byte_range_assigned_after_iterating() {
                 ("fallible_fn_body", "{ Ok(()) }"),
                 ("fn_name", "f3"),
                 ("rbrace", "}")
+            ]
+        );
+    });
+}
+
+#[test]
+fn test_query_matches_within_range_of_long_repetition() {
+    allocations::record(|| {
+        let language = get_language("rust");
+        let query = Query::new(
+            language,
+            "
+            (function_item name: (identifier) @fn-name)
+            ",
+        )
+        .unwrap();
+
+        let source = "
+            fn zero() {}
+            fn one() {}
+            fn two() {}
+            fn three() {}
+            fn four() {}
+            fn five() {}
+            fn six() {}
+            fn seven() {}
+            fn eight() {}
+            fn nine() {}
+            fn ten() {}
+            fn eleven() {}
+            fn twelve() {}
+        "
+        .unindent();
+
+        let mut parser = Parser::new();
+        let mut cursor = QueryCursor::new();
+
+        parser.set_language(language).unwrap();
+        let tree = parser.parse(&source, None).unwrap();
+
+        let matches = cursor
+            .set_point_range(Point::new(8, 0)..Point::new(20, 0))
+            .matches(&query, tree.root_node(), source.as_bytes());
+        assert_eq!(
+            collect_matches(matches, &query, &source),
+            &[
+                (0, vec![("fn-name", "eight")]),
+                (0, vec![("fn-name", "nine")]),
+                (0, vec![("fn-name", "ten")]),
+                (0, vec![("fn-name", "eleven")]),
+                (0, vec![("fn-name", "twelve")]),
             ]
         );
     });
@@ -2797,7 +3007,7 @@ fn test_query_captures_with_many_nested_results_with_fields() {
         .unwrap();
 
         // The outer expression does not match the pattern, but the consequence of the ternary
-        // is an object that *does* contain many occurences of the pattern.
+        // is an object that *does* contain many occurrences of the pattern.
         let count = 50;
         let mut source = "a ? {".to_owned();
         for i in 0..count {
@@ -3060,6 +3270,53 @@ fn test_query_captures_with_matches_removed() {
         }
 
         assert_eq!(captured_strings, &["c", ">", "d", "e", "<", "f",]);
+    });
+}
+
+#[test]
+fn test_query_captures_with_matches_removed_before_they_finish() {
+    allocations::record(|| {
+        let language = get_language("javascript");
+        // When Tree-sitter detects that a pattern is guaranteed to match,
+        // it will start to eagerly return the captures that it has found,
+        // even though it hasn't matched the entire pattern yet. A
+        // namespace_import node always has "*", "as" and then an identifier
+        // for children, so captures will be emitted eagerly for this pattern.
+        let query = Query::new(
+            language,
+            r#"
+            (namespace_import
+              "*" @star
+              "as" @as
+              (identifier) @identifier)
+            "#,
+        )
+        .unwrap();
+
+        let source = "
+          import * as name from 'module-name';
+        ";
+
+        let mut parser = Parser::new();
+        parser.set_language(language).unwrap();
+        let tree = parser.parse(&source, None).unwrap();
+        let mut cursor = QueryCursor::new();
+
+        let mut captured_strings = Vec::new();
+        for (m, i) in cursor.captures(&query, tree.root_node(), source.as_bytes()) {
+            let capture = m.captures[i];
+            let text = capture.node.utf8_text(source.as_bytes()).unwrap();
+            if text == "as" {
+                m.remove();
+                continue;
+            }
+            captured_strings.push(text);
+        }
+
+        // .remove() removes the match before it is finished. The identifier
+        // "name" is part of this match, so we expect that removing the "as"
+        // capture from the match should prevent "name" from matching:
+        assert_eq!(captured_strings, &["*",]);
     });
 }
 
@@ -3420,7 +3677,71 @@ fn test_query_alternative_predicate_prefix() {
 }
 
 #[test]
-fn test_query_step_is_definite() {
+fn test_query_random() {
+    use pretty_assertions::assert_eq;
+
+    allocations::record(|| {
+        let language = get_language("rust");
+        let mut parser = Parser::new();
+        parser.set_language(language).unwrap();
+        let mut cursor = QueryCursor::new();
+        cursor.set_match_limit(64);
+
+        let pattern_tree = parser
+            .parse(include_str!("helpers/query_helpers.rs"), None)
+            .unwrap();
+        let test_tree = parser
+            .parse(include_str!("helpers/query_helpers.rs"), None)
+            .unwrap();
+
+        let start_seed = 0;
+        let end_seed = start_seed + *ITERATION_COUNT;
+
+        for seed in start_seed..(start_seed + end_seed) {
+            let seed = seed as u64;
+            let mut rand = StdRng::seed_from_u64(seed);
+            let (pattern_ast, _) = Pattern::random_pattern_in_tree(&pattern_tree, &mut rand);
+            let pattern = pattern_ast.to_string();
+            let expected_matches = pattern_ast.matches_in_tree(&test_tree);
+
+            let query = match Query::new(language, &pattern) {
+                Ok(query) => query,
+                Err(e) => {
+                    panic!("failed to build query for pattern {pattern} - {e}. seed: {seed}");
+                }
+            };
+            let mut actual_matches = cursor
+                .matches(
+                    &query,
+                    test_tree.root_node(),
+                    (include_str!("parser_test.rs")).as_bytes(),
+                )
+                .map(|mat| Match {
+                    last_node: None,
+                    captures: mat
+                        .captures
+                        .iter()
+                        .map(|c| (query.capture_names()[c.index as usize].as_str(), c.node))
+                        .collect::<Vec<_>>(),
+                })
+                .collect::<Vec<_>>();
+
+            // actual_matches.sort_unstable();
+            actual_matches.dedup();
+
+            if !cursor.did_exceed_match_limit() {
+                assert_eq!(
+                    actual_matches, expected_matches,
+                    "seed: {}, pattern:\n{}",
+                    seed, pattern
+                );
+            }
+        }
+    });
+}
+
+#[test]
+fn test_query_is_pattern_guaranteed_at_step() {
     struct Row {
         language: Language,
         description: &'static str,
@@ -3430,19 +3751,19 @@ fn test_query_step_is_definite() {
 
     let rows = &[
         Row {
-            description: "no definite steps",
+            description: "no guaranteed steps",
             language: get_language("python"),
             pattern: r#"(expression_statement (string))"#,
             results_by_substring: &[("expression_statement", false), ("string", false)],
         },
         Row {
-            description: "all definite steps",
+            description: "all guaranteed steps",
             language: get_language("javascript"),
             pattern: r#"(object "{" "}")"#,
             results_by_substring: &[("object", false), ("{", true), ("}", true)],
         },
         Row {
-            description: "an indefinite step that is optional",
+            description: "a fallible step that is optional",
             language: get_language("javascript"),
             pattern: r#"(object "{" (identifier)? @foo "}")"#,
             results_by_substring: &[
@@ -3453,7 +3774,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "multiple indefinite steps that are optional",
+            description: "multiple fallible steps that are optional",
             language: get_language("javascript"),
             pattern: r#"(object "{" (identifier)? @id1 ("," (identifier) @id2)? "}")"#,
             results_by_substring: &[
@@ -3465,13 +3786,13 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "definite step after indefinite step",
+            description: "guaranteed step after fallibe step",
             language: get_language("javascript"),
             pattern: r#"(pair (property_identifier) ":")"#,
             results_by_substring: &[("pair", false), ("property_identifier", false), (":", true)],
         },
         Row {
-            description: "indefinite step in between two definite steps",
+            description: "fallible step in between two guaranteed steps",
             language: get_language("javascript"),
             pattern: r#"(ternary_expression
                 condition: (_)
@@ -3488,13 +3809,13 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "one definite step after a repetition",
+            description: "one guaranteed step after a repetition",
             language: get_language("javascript"),
             pattern: r#"(object "{" (_) "}")"#,
             results_by_substring: &[("object", false), ("{", false), ("(_)", false), ("}", true)],
         },
         Row {
-            description: "definite steps after multiple repetitions",
+            description: "guaranteed steps after multiple repetitions",
             language: get_language("json"),
             pattern: r#"(object "{" (pair) "," (pair) "," (_) "}")"#,
             results_by_substring: &[
@@ -3508,7 +3829,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "a definite with a field",
+            description: "a guaranteed step with a field",
             language: get_language("javascript"),
             pattern: r#"(binary_expression left: (identifier) right: (_))"#,
             results_by_substring: &[
@@ -3518,7 +3839,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "multiple definite steps with fields",
+            description: "multiple guaranteed steps with fields",
             language: get_language("javascript"),
             pattern: r#"(function_declaration name: (identifier) body: (statement_block))"#,
             results_by_substring: &[
@@ -3528,7 +3849,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "nesting, one definite step",
+            description: "nesting, one guaranteed step",
             language: get_language("javascript"),
             pattern: r#"
                 (function_declaration
@@ -3544,7 +3865,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "definite step after some deeply nested hidden nodes",
+            description: "a guaranteed step after some deeply nested hidden nodes",
             language: get_language("ruby"),
             pattern: r#"
             (singleton_class
@@ -3558,7 +3879,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "nesting, no definite steps",
+            description: "nesting, no guaranteed steps",
             language: get_language("javascript"),
             pattern: r#"
             (call_expression
@@ -3569,7 +3890,7 @@ fn test_query_step_is_definite() {
             results_by_substring: &[("property_identifier", false), ("template_string", false)],
         },
         Row {
-            description: "a definite step after a nested node",
+            description: "a guaranteed step after a nested node",
             language: get_language("javascript"),
             pattern: r#"
             (subscript_expression
@@ -3585,7 +3906,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "a step that is indefinite due to a predicate",
+            description: "a step that is fallible due to a predicate",
             language: get_language("javascript"),
             pattern: r#"
             (subscript_expression
@@ -3602,7 +3923,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "alternation where one branch has definite steps",
+            description: "alternation where one branch has guaranteed steps",
             language: get_language("javascript"),
             pattern: r#"
             [
@@ -3621,7 +3942,7 @@ fn test_query_step_is_definite() {
             ],
         },
         Row {
-            description: "aliased parent node",
+            description: "guaranteed step at the end of an aliased parent node",
             language: get_language("ruby"),
             pattern: r#"
             (method_parameters "(" (identifier) @id")")
@@ -3676,6 +3997,21 @@ fn test_query_step_is_definite() {
                 ("(heredoc_end)", true),
             ],
         },
+        Row {
+            description: "multiple extra nodes",
+            language: get_language("rust"),
+            pattern: r#"
+            (call_expression
+                (line_comment) @a
+                (line_comment) @b
+                (arguments))
+            "#,
+            results_by_substring: &[
+                ("(line_comment) @a", false),
+                ("(line_comment) @b", false),
+                ("(arguments)", true),
+            ],
+        },
     ];
 
     allocations::record(|| {
@@ -3692,7 +4028,7 @@ fn test_query_step_is_definite() {
             for (substring, is_definite) in row.results_by_substring {
                 let offset = row.pattern.find(substring).unwrap();
                 assert_eq!(
-                    query.step_is_definite(offset),
+                    query.is_pattern_guaranteed_at_step(offset),
                     *is_definite,
                     "Description: {}, Pattern: {:?}, substring: {:?}, expected is_definite to be {}",
                     row.description,
@@ -3702,6 +4038,431 @@ fn test_query_step_is_definite() {
                         .join(" "),
                     substring,
                     is_definite,
+                )
+            }
+        }
+    });
+}
+
+#[test]
+fn test_query_is_pattern_rooted() {
+    struct Row {
+        description: &'static str,
+        pattern: &'static str,
+        is_rooted: bool,
+    }
+
+    let rows = [
+        Row {
+            description: "simple token",
+            pattern: r#"(identifier)"#,
+            is_rooted: true,
+        },
+        Row {
+            description: "simple non-terminal",
+            pattern: r#"(function_definition name: (identifier))"#,
+            is_rooted: true,
+        },
+        Row {
+            description: "alternative of many tokens",
+            pattern: r#"["if" "def" (identifier) (comment)]"#,
+            is_rooted: true,
+        },
+        Row {
+            description: "alternative of many non-terminals",
+            pattern: r#"[
+                (function_definition name: (identifier))
+                (class_definition name: (identifier))
+                (block)
+            ]"#,
+            is_rooted: true,
+        },
+        Row {
+            description: "two siblings",
+            pattern: r#"("{" "}")"#,
+            is_rooted: false,
+        },
+        Row {
+            description: "top-level repetition",
+            pattern: r#"(comment)*"#,
+            is_rooted: false,
+        },
+        Row {
+            description: "alternative where one option has two siblings",
+            pattern: r#"[
+                (block)
+                (class_definition)
+                ("(" ")")
+                (function_definition)
+            ]"#,
+            is_rooted: false,
+        },
+        Row {
+            description: "alternative where one option has a top-level repetition",
+            pattern: r#"[
+                (block)
+                (class_definition)
+                (comment)*
+                (function_definition)
+            ]"#,
+            is_rooted: false,
+        },
+    ];
+
+    allocations::record(|| {
+        eprintln!("");
+
+        let language = get_language("python");
+        for row in &rows {
+            if let Some(filter) = EXAMPLE_FILTER.as_ref() {
+                if !row.description.contains(filter.as_str()) {
+                    continue;
+                }
+            }
+            eprintln!("  query example: {:?}", row.description);
+            let query = Query::new(language, row.pattern).unwrap();
+            assert_eq!(
+                query.is_pattern_rooted(0),
+                row.is_rooted,
+                "Description: {}, Pattern: {:?}",
+                row.description,
+                row.pattern
+                    .split_ascii_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            )
+        }
+    });
+}
+
+#[test]
+fn test_query_is_pattern_non_local() {
+    struct Row {
+        description: &'static str,
+        pattern: &'static str,
+        language: Language,
+        is_non_local: bool,
+    }
+
+    let rows = [
+        Row {
+            description: "simple token",
+            pattern: r#"(identifier)"#,
+            language: get_language("python"),
+            is_non_local: false,
+        },
+        Row {
+            description: "siblings that can occur in an argument list",
+            pattern: r#"((identifier) (identifier))"#,
+            language: get_language("python"),
+            is_non_local: true,
+        },
+        Row {
+            description: "siblings that can occur in a statement block",
+            pattern: r#"((return_statement) (return_statement))"#,
+            language: get_language("python"),
+            is_non_local: true,
+        },
+        Row {
+            description: "siblings that can occur in a source file",
+            pattern: r#"((function_definition) (class_definition))"#,
+            language: get_language("python"),
+            is_non_local: true,
+        },
+        Row {
+            description: "siblings that can't occur in any repetition",
+            pattern: r#"("{" "}")"#,
+            language: get_language("python"),
+            is_non_local: false,
+        },
+        Row {
+            description: "siblings that can't occur in any repetition, wildcard root",
+            pattern: r#"(_ "{" "}") @foo"#,
+            language: get_language("javascript"),
+            is_non_local: false,
+        },
+        Row {
+            description: "siblings that can occur in a class body, wildcard root",
+            pattern: r#"(_ (method_definition) (method_definition)) @foo"#,
+            language: get_language("javascript"),
+            is_non_local: true,
+        },
+        Row {
+            description: "top-level repetitions that can occur in a class body",
+            pattern: r#"(method_definition)+ @foo"#,
+            language: get_language("javascript"),
+            is_non_local: true,
+        },
+        Row {
+            description: "top-level repetitions that can occur in a statement block",
+            pattern: r#"(return_statement)+ @foo"#,
+            language: get_language("javascript"),
+            is_non_local: true,
+        },
+        Row {
+            description: "rooted pattern that can occur in a statement block",
+            pattern: r#"(return_statement) @foo"#,
+            language: get_language("javascript"),
+            is_non_local: false,
+        },
+    ];
+
+    allocations::record(|| {
+        eprintln!("");
+
+        for row in &rows {
+            if let Some(filter) = EXAMPLE_FILTER.as_ref() {
+                if !row.description.contains(filter.as_str()) {
+                    continue;
+                }
+            }
+            eprintln!("  query example: {:?}", row.description);
+            let query = Query::new(row.language, row.pattern).unwrap();
+            assert_eq!(
+                query.is_pattern_non_local(0),
+                row.is_non_local,
+                "Description: {}, Pattern: {:?}",
+                row.description,
+                row.pattern
+                    .split_ascii_whitespace()
+                    .collect::<Vec<_>>()
+                    .join(" "),
+            )
+        }
+    });
+}
+
+#[test]
+fn test_capture_quantifiers() {
+    struct Row {
+        description: &'static str,
+        language: Language,
+        pattern: &'static str,
+        capture_quantifiers: &'static [(usize, &'static str, CaptureQuantifier)],
+    }
+
+    let rows = &[
+        // Simple quantifiers
+        Row {
+            description: "Top level capture",
+            language: get_language("python"),
+            pattern: r#"
+                (module) @mod
+            "#,
+            capture_quantifiers: &[(0, "mod", CaptureQuantifier::One)],
+        },
+        Row {
+            description: "Nested list capture capture",
+            language: get_language("javascript"),
+            pattern: r#"
+                (array (_)* @elems) @array
+            "#,
+            capture_quantifiers: &[
+                (0, "array", CaptureQuantifier::One),
+                (0, "elems", CaptureQuantifier::ZeroOrMore),
+            ],
+        },
+        Row {
+            description: "Nested non-empty list capture capture",
+            language: get_language("javascript"),
+            pattern: r#"
+                (array (_)+ @elems) @array
+            "#,
+            capture_quantifiers: &[
+                (0, "array", CaptureQuantifier::One),
+                (0, "elems", CaptureQuantifier::OneOrMore),
+            ],
+        },
+        // Nested quantifiers
+        Row {
+            description: "capture nested in optional pattern",
+            language: get_language("javascript"),
+            pattern: r#"
+                (array (call_expression (arguments (_) @arg))? @call) @array
+            "#,
+            capture_quantifiers: &[
+                (0, "array", CaptureQuantifier::One),
+                (0, "call", CaptureQuantifier::ZeroOrOne),
+                (0, "arg", CaptureQuantifier::ZeroOrOne),
+            ],
+        },
+        Row {
+            description: "optional capture nested in non-empty list pattern",
+            language: get_language("javascript"),
+            pattern: r#"
+                (array (call_expression (arguments (_)? @arg))+ @call) @array
+            "#,
+            capture_quantifiers: &[
+                (0, "array", CaptureQuantifier::One),
+                (0, "call", CaptureQuantifier::OneOrMore),
+                (0, "arg", CaptureQuantifier::ZeroOrMore),
+            ],
+        },
+        Row {
+            description: "non-empty list capture nested in optional pattern",
+            language: get_language("javascript"),
+            pattern: r#"
+                (array (call_expression (arguments (_)+ @args))? @call) @array
+            "#,
+            capture_quantifiers: &[
+                (0, "array", CaptureQuantifier::One),
+                (0, "call", CaptureQuantifier::ZeroOrOne),
+                (0, "args", CaptureQuantifier::ZeroOrMore),
+            ],
+        },
+        // Quantifiers in alternations
+        Row {
+            description: "capture is the same in all alternatives",
+            language: get_language("javascript"),
+            pattern: r#"[
+                (function_declaration name:(identifier) @name)
+                (call_expression function:(identifier) @name)
+            ]"#,
+            capture_quantifiers: &[(0, "name", CaptureQuantifier::One)],
+        },
+        Row {
+            description: "capture appears in some alternatives",
+            language: get_language("javascript"),
+            pattern: r#"[
+                (function_declaration name:(identifier) @name)
+                (function)
+            ] @fun"#,
+            capture_quantifiers: &[
+                (0, "fun", CaptureQuantifier::One),
+                (0, "name", CaptureQuantifier::ZeroOrOne),
+            ],
+        },
+        Row {
+            description: "capture has different quantifiers in alternatives",
+            language: get_language("javascript"),
+            pattern: r#"[
+                (call_expression arguments:(arguments (_)+ @args))
+                (new_expression  arguments:(arguments (_)? @args))
+            ] @call"#,
+            capture_quantifiers: &[
+                (0, "call", CaptureQuantifier::One),
+                (0, "args", CaptureQuantifier::ZeroOrMore),
+            ],
+        },
+        // Quantifiers in siblings
+        Row {
+            description: "siblings have different captures with different quantifiers",
+            language: get_language("javascript"),
+            pattern: r#"
+                (call_expression (arguments (identifier)? @self (_)* @args)) @call
+            "#,
+            capture_quantifiers: &[
+                (0, "call", CaptureQuantifier::One),
+                (0, "self", CaptureQuantifier::ZeroOrOne),
+                (0, "args", CaptureQuantifier::ZeroOrMore),
+            ],
+        },
+        Row {
+            description: "siblings have same capture with different quantifiers",
+            language: get_language("javascript"),
+            pattern: r#"
+                (call_expression (arguments (identifier) @args (_)* @args)) @call
+            "#,
+            capture_quantifiers: &[
+                (0, "call", CaptureQuantifier::One),
+                (0, "args", CaptureQuantifier::OneOrMore),
+            ],
+        },
+        // Combined scenarios
+        Row {
+            description: "combined nesting, alternatives, and siblings",
+            language: get_language("javascript"),
+            pattern: r#"
+                (array
+                    (call_expression
+                        (arguments [
+                            (identifier) @self
+                            (_)+ @args
+                        ])
+                    )+ @call
+                ) @array
+            "#,
+            capture_quantifiers: &[
+                (0, "array", CaptureQuantifier::One),
+                (0, "call", CaptureQuantifier::OneOrMore),
+                (0, "self", CaptureQuantifier::ZeroOrMore),
+                (0, "args", CaptureQuantifier::ZeroOrMore),
+            ],
+        },
+        // Multiple patterns
+        Row {
+            description: "multiple patterns",
+            language: get_language("javascript"),
+            pattern: r#"
+                (function_declaration name: (identifier) @x)
+                (statement_identifier) @y
+                (property_identifier)+ @z
+                (array (identifier)* @x)
+            "#,
+            capture_quantifiers: &[
+                // x
+                (0, "x", CaptureQuantifier::One),
+                (1, "x", CaptureQuantifier::Zero),
+                (2, "x", CaptureQuantifier::Zero),
+                (3, "x", CaptureQuantifier::ZeroOrMore),
+                // y
+                (0, "y", CaptureQuantifier::Zero),
+                (1, "y", CaptureQuantifier::One),
+                (2, "y", CaptureQuantifier::Zero),
+                (3, "y", CaptureQuantifier::Zero),
+                // z
+                (0, "z", CaptureQuantifier::Zero),
+                (1, "z", CaptureQuantifier::Zero),
+                (2, "z", CaptureQuantifier::OneOrMore),
+                (3, "z", CaptureQuantifier::Zero),
+            ],
+        },
+        Row {
+            description: "multiple alternatives",
+            language: get_language("javascript"),
+            pattern: r#"
+            [
+                (array (identifier) @x)
+                (function_declaration name: (identifier)+ @x)
+            ]
+            [
+                (array (identifier) @x)
+                (function_declaration name: (identifier)+ @x)
+            ]
+            "#,
+            capture_quantifiers: &[
+                (0, "x", CaptureQuantifier::OneOrMore),
+                (1, "x", CaptureQuantifier::OneOrMore),
+            ],
+        },
+    ];
+
+    allocations::record(|| {
+        eprintln!("");
+
+        for row in rows.iter() {
+            if let Some(filter) = EXAMPLE_FILTER.as_ref() {
+                if !row.description.contains(filter.as_str()) {
+                    continue;
+                }
+            }
+            eprintln!("  query example: {:?}", row.description);
+            let query = Query::new(row.language, row.pattern).unwrap();
+            for (pattern, capture, expected_quantifier) in row.capture_quantifiers {
+                let index = query.capture_index_for_name(capture).unwrap();
+                let actual_quantifier = query.capture_quantifiers(*pattern)[index as usize];
+                assert_eq!(
+                    actual_quantifier,
+                    *expected_quantifier,
+                    "Description: {}, Pattern: {:?}, expected quantifier of @{} to be {:?} instead of {:?}",
+                    row.description,
+                    row.pattern
+                        .split_ascii_whitespace()
+                        .collect::<Vec<_>>()
+                        .join(" "),
+                    capture,
+                    *expected_quantifier,
+                    actual_quantifier,
                 )
             }
         }
