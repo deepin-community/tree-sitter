@@ -37,7 +37,7 @@ pub enum HighlightEvent {
     HighlightEnd,
 }
 
-/// Contains the data neeeded to higlight code written in a particular language.
+/// Contains the data needed to highlight code written in a particular language.
 ///
 /// This struct is immutable and can be shared between threads.
 pub struct HighlightConfiguration {
@@ -586,7 +586,7 @@ where
                     break;
                 }
                 if i > 0 {
-                    &self.layers[0..(i + 1)].rotate_left(1);
+                    self.layers[0..(i + 1)].rotate_left(1);
                 }
                 break;
             } else {
@@ -835,6 +835,7 @@ where
             // highlighting patterns that are disabled for local variables.
             if definition_highlight.is_some() || reference_highlight.is_some() {
                 while layer.config.non_local_variable_patterns[match_.pattern_index] {
+                    match_.remove();
                     if let Some((next_match, next_capture_index)) = layer.captures.peek() {
                         let next_capture = next_match.captures[*next_capture_index];
                         if next_capture.node == capture.node {

@@ -1,3 +1,48 @@
+tree-sitter (0.20.8-2) unstable; urgency=medium
+
+  * Upload to unstable
+
+ -- James McCoy <jamessan@debian.org>  Tue, 04 Jul 2023 09:09:44 -0400
+
+tree-sitter (0.20.8-1) experimental; urgency=medium
+
+  * New upstream release
+  * Update symbols for 0.20.8
+  * Mark all exported symbols not part of the public API as optional
+  * Declare compliance with Policy 4.6.2, no changes needed
+
+ -- James McCoy <jamessan@debian.org>  Fri, 07 Apr 2023 19:59:30 -0400
+
+tree-sitter (0.20.7-1) unstable; urgency=medium
+
+  * New upstream release
+  * Update symbols for 0.20.7
+  * Declare compliance with Policy 4.6.1, no changes needed
+  * watch: use mode=git instead of scraping the releases page
+
+ -- James McCoy <jamessan@debian.org>  Tue, 15 Nov 2022 07:19:34 -0500
+
+tree-sitter (0.20.6-1) unstable; urgency=medium
+
+  * New upstream release
+
+ -- James McCoy <jamessan@debian.org>  Tue, 29 Mar 2022 07:18:48 -0400
+
+tree-sitter (0.20.3-1) unstable; urgency=medium
+
+  * New upstream release
+  * libtree-sitter0.symbols: Add/remove functions for 0.20.3
+
+ -- James McCoy <jamessan@debian.org>  Sat, 29 Jan 2022 13:05:52 -0500
+
+tree-sitter (0.20.1-1) unstable; urgency=medium
+
+  * New upstream release
+  * Bump copyright years
+  * Update libtree-sitter0.symbols
+
+ -- James McCoy <jamessan@debian.org>  Mon, 20 Dec 2021 14:59:34 -0500
+
 tree-sitter (0.20.0-2) unstable; urgency=medium
 
   * Upload to unstable

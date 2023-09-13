@@ -1,3 +1,4 @@
+use std::ffi::OsStr;
 use std::path::{Path, PathBuf};
 use std::{env, fs};
 
@@ -6,7 +7,7 @@ fn main() {
         println!("cargo:rustc-env={}={}", "BUILD_SHA", git_sha);
     }
 
-    if wasm_files_present() {
+    if web_playground_files_present() {
         println!("cargo:rustc-cfg={}", "TREE_SITTER_EMBED_WASM_BINDING");
     }
 
@@ -16,15 +17,16 @@ fn main() {
         "RUST_BINDING_VERSION", rust_binding_version,
     );
 
-    let emscripten_version = fs::read_to_string("../emscripten-version").unwrap();
+    let emscripten_version = fs::read_to_string("emscripten-version").unwrap();
     println!(
         "cargo:rustc-env={}={}",
         "EMSCRIPTEN_VERSION", emscripten_version,
     );
 }
 
-fn wasm_files_present() -> bool {
+fn web_playground_files_present() -> bool {
     let paths = [
+        "../docs/assets/js/playground.js",
         "../lib/binding_web/tree-sitter.js",
         "../lib/binding_web/tree-sitter.wasm",
     ];
@@ -65,7 +67,39 @@ fn read_git_sha() -> Option<String> {
         // If we're on a branch, read the SHA from the ref file.
         if head_content.starts_with("ref: ") {
             head_content.replace_range(0.."ref: ".len(), "");
-            let ref_filename = git_dir_path.join(&head_content);
+            let ref_filename = {
+                // Go to real non-worktree gitdir
+                let git_dir_path = git_dir_path
+                    .parent()
+                    .map(|p| {
+                        p.file_name()
+                            .map(|n| n == OsStr::new("worktrees"))
+                            .and_then(|x| x.then(|| p.parent()))
+                    })
+                    .flatten()
+                    .flatten()
+                    .unwrap_or(&git_dir_path);
+
+                let file = git_dir_path.join(&head_content);
+                if file.is_file() {
+                    file
+                } else {
+                    let packed_refs = git_dir_path.join("packed-refs");
+                    if let Ok(packed_refs_content) = fs::read_to_string(&packed_refs) {
+                        for line in packed_refs_content.lines() {
+                            if let Some((hash, r#ref)) = line.split_once(' ') {
+                                if r#ref == head_content {
+                                    if let Some(path) = packed_refs.to_str() {
+                                        println!("cargo:rerun-if-changed={}", path);
+                                    }
+                                    return Some(hash.to_string());
+                                }
+                            }
+                        }
+                    }
+                    return None;
+                }
+            };
             if let Some(path) = ref_filename.to_str() {
                 println!("cargo:rerun-if-changed={}", path);
             }
@@ -81,10 +115,10 @@ fn read_git_sha() -> Option<String> {
 }
 
 fn read_rust_binding_version() -> String {
-    let path = "../lib/Cargo.toml";
+    let path = "Cargo.toml";
     let text = fs::read_to_string(path).unwrap();
     let cargo_toml = toml::from_str::<toml::Value>(text.as_ref()).unwrap();
-    cargo_toml["package"]["version"]
+    cargo_toml["dependencies"]["tree-sitter"]["version"]
         .as_str()
         .unwrap()
         .trim_matches('"')
