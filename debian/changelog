@@ -1,3 +1,18 @@
+tree-sitter (0.22.6-1) experimental; urgency=medium
+
+  * New upstream release
+    + Fix possible infinite loop when a tree has zero-width tokens (Closes:
+      #1052020)
+  * Build librust-tree-sitter{,-tags,-highlight,-loader,-config}-dev and
+    tree-sitter-cli packages here instead of from their own source packages
+  * Specify PREFIX and LIBDIR for dh_auto_build
+  * Update libtree-sitter0.symbols
+  * Switch package branch to debian/experimental
+  * Declare compliance with Policy 4.7.0, no changes needed
+  * Run wrap-and-sort -ast
+
+ -- James McCoy <jamessan@debian.org>  Fri, 06 Dec 2024 15:48:14 -0500
+
 tree-sitter (0.20.8-2) unstable; urgency=medium
 
   * Upload to unstable

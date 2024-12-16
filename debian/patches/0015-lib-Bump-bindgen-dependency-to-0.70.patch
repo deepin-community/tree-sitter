@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 30 Nov 2024 20:28:59 -0500
+Subject: lib: Bump bindgen dependency to 0.70
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ lib/Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/lib/Cargo.toml b/lib/Cargo.toml
+index f9d834f..3bfb868 100644
+--- a/lib/Cargo.toml
++++ b/lib/Cargo.toml
+@@ -31,7 +31,7 @@ include = [
+ regex.workspace = true
+ 
+ [build-dependencies]
+-bindgen = { version = "0.69.4", optional = true }
++bindgen = { version = "0.70", optional = true }
+ cc.workspace = true
+ 
+ [lib]

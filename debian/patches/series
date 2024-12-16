@@ -1,0 +1,15 @@
+0001-Remove-wasm-feature.patch
+0002-Relax-clap-dependency-to-4.4.18.patch
+0003-Relax-ctrlc-dependency-to-3.4.2.patch
+0004-Relax-html-escape-dependency-to-0.2.12.patch
+0005-Relax-memchr-dependency-to-2.7.1.patch
+0006-Relax-regex-syntax-dependency-to-0.8.2.patch
+0007-Relax-semver-dependency-to-1.0.21.patch
+0008-Relax-smallbitvec-dependency-to-2.5.1.patch
+0009-Relax-webbrowser-dependency-to-allow-0.8.patch
+0010-Relax-heck-dependency-to-0.4.0.patch
+0011-Relax-anstyle-dependency-to-1.0.4.patch
+0012-Report-deb-built-using-tree-sitter-0-when-building-t.patch
+0013-Relax-ctor-dependency-to-0.1-0.3.patch
+0014-Relax-fs4-dependency-to-0.9-0.12.patch
+0015-lib-Bump-bindgen-dependency-to-0.70.patch

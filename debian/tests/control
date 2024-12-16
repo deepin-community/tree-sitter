@@ -1,0 +1,150 @@
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-dev:@,
+Depends:
+ dh-cargo (>= 31),
+ librust-bindgen-0.70+default-dev,
+ librust-tree-sitter-dev,
+ rustc (>= 1.65),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-dev:default,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-dev,
+ rustc (>= 1.65),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-dev:,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-dev,
+ rustc (>= 1.65),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-config 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-config-dev:@,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-config-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-config 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-config-dev:default,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-config-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-config 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-config-dev:,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-config-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-highlight 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-highlight-dev:@,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-highlight-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-highlight 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-highlight-dev:default,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-highlight-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-highlight 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-highlight-dev:,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-highlight-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-loader 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-loader-dev:@,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-loader-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-loader 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-loader-dev:default,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-loader-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-loader 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-loader-dev:,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-loader-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-tags 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-tags-dev:@,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-tags-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-tags 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-tags-dev:default,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-tags-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/cargo/bin/cargo-auto-test tree-sitter-tags 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-tags-dev:,
+Depends:
+ dh-cargo (>= 31),
+ librust-tree-sitter-tags-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,

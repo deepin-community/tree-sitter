@@ -9,5 +9,15 @@ CFLAGS += $(CPPFLAGS)
 %:
 	dh $@
 
+override_dh_auto_build:
+	dh_auto_build -- PREFIX=/usr LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
+	dh_auto_build --buildsystem=rust
+
+# tree-sitter-cli's tests require downloading fixtures at build time, so we can't run those.
+# xtask is an internal crate used for release automation
+override_dh_auto_test:
+	dh_auto_test --buildsystem=rust -- --tests --workspace --exclude tree-sitter-cli --exclude xtask
+
 override_dh_auto_install:
 	dh_auto_install -- PREFIX=/usr LIBDIR=/usr/lib/$(DEB_HOST_MULTIARCH)
+	dh_auto_install --buildsystem=rust

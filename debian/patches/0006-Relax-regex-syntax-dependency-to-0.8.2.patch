@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:30:51 -0700
+Subject: Relax regex-syntax dependency to 0.8.2
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 903b42f..3642efc 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -69,7 +69,7 @@ once_cell = "1.19.0"
+ pretty_assertions = "1.4.0"
+ rand = "0.8.5"
+ regex = "1.10.4"
+-regex-syntax = "0.8.3"
++regex-syntax = "0.8.2"
+ rustc-hash = "1.1.0"
+ semver = "1.0.22"
+ serde = { version = "1.0.198", features = ["derive"] }

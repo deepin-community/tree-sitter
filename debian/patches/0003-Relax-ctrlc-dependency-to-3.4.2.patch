@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:29:55 -0700
+Subject: Relax ctrlc dependency to 3.4.2
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index eed8319..3b1415b 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -50,7 +50,7 @@ clap = { version = "4.4.18", features = [
+   "unstable-styles",
+ ] }
+ ctor = "0.2.8"
+-ctrlc = { version = "3.4.4", features = ["termination"] }
++ctrlc = { version = "3.4.2", features = ["termination"] }
+ difference = "2.0.0"
+ dirs = "5.0.1"
+ filetime = "0.2.23"

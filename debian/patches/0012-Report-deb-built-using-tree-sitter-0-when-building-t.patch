@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Tue, 24 Sep 2024 21:15:04 -0400
+Subject: Report deb-built-using=tree-sitter=0 when building tree-sitter crate
+
+The license is MIT, so there is no requirement to distribute source along with binaries.
+
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ lib/binding_rust/build.rs | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/lib/binding_rust/build.rs b/lib/binding_rust/build.rs
+index 19cb0f6..c47d65e 100644
+--- a/lib/binding_rust/build.rs
++++ b/lib/binding_rust/build.rs
+@@ -47,6 +47,7 @@ fn main() {
+         .file(src_path.join("lib.c"))
+         .compile("tree-sitter");
+ 
++    println!("dh-cargo:deb-built-using=tree-sitter=0={}", env!("CARGO_MANIFEST_DIR"));
+     println!("cargo:include={}", include_path.display());
+ }
+ 

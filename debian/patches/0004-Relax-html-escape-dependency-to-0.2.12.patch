@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:30:13 -0700
+Subject: Relax html-escape dependency to 0.2.12
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 3b1415b..81097b5 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -58,7 +58,7 @@ fs4 = "0.8.2"
+ git2 = "0.18.3"
+ glob = "0.3.1"
+ heck = "0.5.0"
+-html-escape = "0.2.13"
++html-escape = "0.2.12"
+ indexmap = "2.2.6"
+ indoc = "2.0.5"
+ lazy_static = "1.4.0"

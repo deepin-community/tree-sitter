@@ -1,0 +1,234 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 17:12:56 -0700
+Subject: Remove wasm feature
+
+wasmtime-c-api-impl is not packaged, so avoid exposing the feature for now.
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml            |  1 -
+ cli/Cargo.toml        |  2 --
+ cli/loader/Cargo.toml |  1 -
+ cli/src/lib.rs        |  2 ++
+ cli/src/main.rs       | 46 +++++++++++++++++++++++++++++++---------------
+ cli/src/wasm.rs       |  1 +
+ lib/Cargo.toml        |  7 -------
+ 7 files changed, 34 insertions(+), 26 deletions(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 53caf23..4958503 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -82,7 +82,6 @@ tiny_http = "0.12.0"
+ toml = "0.8.12"
+ unindent = "0.2.3"
+ walkdir = "2.5.0"
+-wasmparser = "0.206.0"
+ webbrowser = "1.0.0"
+ 
+ tree-sitter = { version = "0.22.6", path = "./lib" }
+diff --git a/cli/Cargo.toml b/cli/Cargo.toml
+index fd2136a..f53c944 100644
+--- a/cli/Cargo.toml
++++ b/cli/Cargo.toml
+@@ -22,7 +22,6 @@ name = "benchmark"
+ harness = false
+ 
+ [features]
+-wasm = ["tree-sitter/wasm", "tree-sitter-loader/wasm"]
+ 
+ [dependencies]
+ ansi_term.workspace = true
+@@ -51,7 +50,6 @@ serde_json.workspace = true
+ smallbitvec.workspace = true
+ tiny_http.workspace = true
+ walkdir.workspace = true
+-wasmparser.workspace = true
+ webbrowser.workspace = true
+ 
+ tree-sitter.workspace = true
+diff --git a/cli/loader/Cargo.toml b/cli/loader/Cargo.toml
+index bff2f63..4083ade 100644
+--- a/cli/loader/Cargo.toml
++++ b/cli/loader/Cargo.toml
+@@ -13,7 +13,6 @@ keywords.workspace = true
+ categories.workspace = true
+ 
+ [features]
+-wasm = ["tree-sitter/wasm"]
+ 
+ [dependencies]
+ anyhow.workspace = true
+diff --git a/cli/src/lib.rs b/cli/src/lib.rs
+index 549db77..d7a7e3a 100644
+--- a/cli/src/lib.rs
++++ b/cli/src/lib.rs
+@@ -4,6 +4,7 @@ pub mod generate;
+ pub mod highlight;
+ pub mod logger;
+ pub mod parse;
++#[cfg(feature = "wasm")]
+ pub mod playground;
+ pub mod query;
+ pub mod query_testing;
+@@ -12,6 +13,7 @@ pub mod test;
+ pub mod test_highlight;
+ pub mod test_tags;
+ pub mod util;
++#[cfg(feature = "wasm")]
+ pub mod wasm;
+ 
+ #[cfg(test)]
+diff --git a/cli/src/main.rs b/cli/src/main.rs
+index 94df332..1831149 100644
+--- a/cli/src/main.rs
++++ b/cli/src/main.rs
+@@ -14,10 +14,12 @@ use tree_sitter_cli::{
+     generate::{self, lookup_package_json_for_path},
+     highlight, logger,
+     parse::{self, ParseFileOptions, ParseOutput},
+-    playground, query, tags,
++    query, tags,
+     test::{self, TestOptions},
+-    test_highlight, test_tags, util, wasm,
++    test_highlight, test_tags, util,
+ };
++#[cfg(feature = "wasm")]
++use tree_sitter_cli::{playground, wasm};
+ use tree_sitter_config::Config;
+ use tree_sitter_highlight::Highlighter;
+ use tree_sitter_loader as loader;
+@@ -33,12 +35,14 @@ enum Commands {
+     InitConfig(InitConfig),
+     Generate(Generate),
+     Build(Build),
++    #[cfg(feature = "wasm")]
+     BuildWasm(BuildWasm),
+     Parse(Parse),
+     Test(Test),
+     Query(Query),
+     Highlight(Highlight),
+     Tags(Tags),
++    #[cfg(feature = "wasm")]
+     Playground(Playground),
+     DumpLanguages(DumpLanguages),
+ }
+@@ -121,6 +125,7 @@ struct Build {
+     pub internal_build: bool,
+ }
+ 
++#[cfg(feature = "wasm")]
+ #[derive(Args)]
+ #[command(about = "Compile a parser to WASM", alias = "bw")]
+ struct BuildWasm {
+@@ -159,6 +164,7 @@ struct Parse {
+         help = "Produce the log.html file with debug graphs"
+     )]
+     pub debug_graph: bool,
++    #[cfg(feature = "wasm")]
+     #[arg(
+         long,
+         help = "Compile parsers to wasm instead of native dynamic libraries"
+@@ -237,6 +243,7 @@ struct Test {
+         help = "Produce the log.html file with debug graphs"
+     )]
+     pub debug_graph: bool,
++    #[cfg(feature = "wasm")]
+     #[arg(
+         long,
+         help = "Compile parsers to wasm instead of native dynamic libraries"
+@@ -344,6 +351,7 @@ struct Tags {
+     pub config_path: Option<PathBuf>,
+ }
+ 
++#[cfg(feature = "wasm")]
+ #[derive(Args)]
+ #[command(
+     about = "Start local playground for a parser in the browser",
+@@ -466,19 +474,25 @@ fn run() -> Result<()> {
+ 
+         Commands::Build(build_options) => {
+             if build_options.wasm {
+-                let grammar_path =
+-                    current_dir.join(build_options.path.as_deref().unwrap_or_default());
+-                let output_path = build_options.output.map(|path| current_dir.join(path));
+-                let root_path = lookup_package_json_for_path(&grammar_path.join("package.json"))
+-                    .map(|(p, _)| p.parent().unwrap().to_path_buf())?;
+-                wasm::compile_language_to_wasm(
+-                    &loader,
+-                    Some(&root_path),
+-                    &grammar_path,
+-                    &current_dir,
+-                    output_path,
+-                    build_options.docker,
+-                )?;
++                if !cfg!(feature = "wasm") {
++                    return Err(anyhow!("cli was not build with wasm feature enabled"));
++                }
++                #[cfg(feature = "wasm")]
++                {
++                    let grammar_path =
++                        current_dir.join(build_options.path.as_deref().unwrap_or_default());
++                    let output_path = build_options.output.map(|path| current_dir.join(path));
++                    let root_path = lookup_package_json_for_path(&grammar_path.join("package.json"))
++                        .map(|(p, _)| p.parent().unwrap().to_path_buf())?;
++                    wasm::compile_language_to_wasm(
++                        &loader,
++                        Some(&root_path),
++                        &grammar_path,
++                        &current_dir,
++                        output_path,
++                        build_options.docker,
++                    )?;
++                }
+             } else {
+                 let grammar_path =
+                     current_dir.join(build_options.path.as_deref().unwrap_or_default());
+@@ -521,6 +535,7 @@ fn run() -> Result<()> {
+             }
+         }
+ 
++        #[cfg(feature = "wasm")]
+         Commands::BuildWasm(wasm_options) => {
+             eprintln!("`build-wasm` is deprecated and will be removed in v0.24.0. You should use `build --wasm` instead");
+             let grammar_path = current_dir.join(wasm_options.path.unwrap_or_default());
+@@ -905,6 +920,7 @@ fn run() -> Result<()> {
+             )?;
+         }
+ 
++        #[cfg(feature = "wasm")]
+         Commands::Playground(playground_options) => {
+             let open_in_browser = !playground_options.quiet;
+             let grammar_path = playground_options
+diff --git a/cli/src/wasm.rs b/cli/src/wasm.rs
+index 7782a33..dfe60f5 100644
+--- a/cli/src/wasm.rs
++++ b/cli/src/wasm.rs
+@@ -1,3 +1,4 @@
++#![cfg(feature = "wasm")]
+ use std::{
+     fs,
+     path::{Path, PathBuf},
+diff --git a/lib/Cargo.toml b/lib/Cargo.toml
+index 4d9e8b9..f9d834f 100644
+--- a/lib/Cargo.toml
++++ b/lib/Cargo.toml
+@@ -26,17 +26,10 @@ include = [
+ ]
+ 
+ [features]
+-wasm = ["wasmtime-c-api"]
+ 
+ [dependencies]
+ regex.workspace = true
+ 
+-[dependencies.wasmtime-c-api]
+-version = "19"
+-optional = true
+-package = "wasmtime-c-api-impl"
+-default-features = false
+-
+ [build-dependencies]
+ bindgen = { version = "0.69.4", optional = true }
+ cc.workspace = true

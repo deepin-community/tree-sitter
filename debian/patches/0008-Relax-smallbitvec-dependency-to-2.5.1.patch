@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:31:29 -0700
+Subject: Relax smallbitvec dependency to 2.5.1
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 0da084d..0d01c3a 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -75,7 +75,7 @@ semver = "1.0.21"
+ serde = { version = "1.0.198", features = ["derive"] }
+ serde_derive = "1.0.197"
+ serde_json = { version = "1.0.116", features = ["preserve_order"] }
+-smallbitvec = "2.5.3"
++smallbitvec = "2.5.1"
+ tempfile = "3.10.1"
+ thiserror = "1.0.59"
+ tiny_http = "0.12.0"
