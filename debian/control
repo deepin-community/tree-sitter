@@ -4,8 +4,53 @@ Maintainer: Tree-sitter Maintainers <team+tree-sitter@tracker.debian.org>
 Uploaders:
  James McCoy <jamessan@debian.org>,
 Build-Depends:
+ cargo:native,
  debhelper-compat (= 13),
-Standards-Version: 4.6.2
+ dh-sequence-rust,
+ librust-ansi-term-0.12+default-dev (>= 0.12.1),
+ librust-anstyle-1+default-dev (>= 1.0.4),
+ librust-anyhow-1+default-dev (>= 1.0.82),
+ librust-cc-1+default-dev (>= 1.0.95),
+ librust-clap-4+cargo-dev (>= 4.4.18),
+ librust-clap-4+derive-dev (>= 4.4.18),
+ librust-clap-4+env-dev (>= 4.4.18),
+ librust-clap-4+help-dev (>= 4.4.18),
+ librust-clap-4+unstable-styles-dev (>= 4.4.18),
+ librust-ctor+default-dev (<< 0.3) <!nocheck>,
+ librust-ctrlc-3+termination-dev (>= 3.4.2),
+ librust-difference-2+default-dev (>= 2.0.0),
+ librust-dirs-5+default-dev (>= 5.0.1),
+ librust-filetime-0.2+default-dev (>= 0.2.23),
+ librust-fs4-0.11+default-dev (>= 0.11.0),
+ librust-glob-0.3+default-dev (>= 0.3.1),
+ librust-heck-0.4+default-dev,
+ librust-html-escape-0.2+default-dev (>= 0.2.12),
+ librust-indexmap-2+default-dev (>= 2.2.6),
+ librust-indoc-2+default-dev (>= 2.0.5),
+ librust-lazy-static-1+default-dev (>= 1.4.0),
+ librust-libloading-0.8+default-dev (>= 0.8.3),
+ librust-log-0.4+std-dev (>= 0.4.21),
+ librust-memchr-2+default-dev (>= 2.7.1),
+ librust-once-cell-1+default-dev (>= 1.19.0),
+ librust-pretty-assertions-1+default-dev (>= 1.4.0) <!nocheck>,
+ librust-rand-0.8+default-dev (>= 0.8.5) <!nocheck>,
+ librust-regex-1+default-dev (>= 1.10.4),
+ librust-regex-syntax-0.8+default-dev (>= 0.8.2),
+ librust-rustc-hash-1+default-dev (>= 1.1.0),
+ librust-semver-1+default-dev (>= 1.0.21),
+ librust-serde-1+derive-dev (>= 1.0.198),
+ librust-serde-derive-1+default-dev (>= 1.0.197),
+ librust-serde-json-1+preserve-order-dev (>= 1.0.116),
+ librust-smallbitvec-2+default-dev (>= 2.5.1),
+ librust-tempfile-3+default-dev (>= 3.10.1),
+ librust-thiserror-1+default-dev (>= 1.0.59),
+ librust-tiny-http-0.12+default-dev (>= 0.12.0),
+ librust-unindent-0.2+default-dev (>= 0.2.3) <!nocheck>,
+ librust-walkdir-2+default-dev (>= 2.5.0),
+ librust-webbrowser-dev (>= 0.8),
+ libstd-rust-dev,
+ rustc:native (>= 1.74.1),
+Standards-Version: 4.7.2
 Section: libs
 Homepage: https://tree-sitter.github.io/tree-sitter/
 Rules-Requires-Root: no
@@ -17,7 +62,7 @@ Section: libdevel
 Architecture: any
 Multi-Arch: same
 Depends:
- libtree-sitter0 (= ${binary:Version}),
+ libtree-sitter0.22 (= ${binary:Version}),
  ${misc:Depends},
 Description: incremental parsing system for programming tools (development files)
  Tree-sitter is a parser generator tool and an incremental parsing library. It
@@ -36,11 +81,13 @@ Description: incremental parsing system for programming tools (development files
  This package contains the header files and libraries needed for developing
  with tree-sitter.
 
-Package: libtree-sitter0
+Package: libtree-sitter0.22
 Pre-Depends:
  ${misc:Pre-Depends},
 Multi-Arch: same
 Architecture: any
+Breaks: libtree-sitter0 (<< 0.22.6-5~)
+Replaces: libtree-sitter0 (<< 0.22.6-5~)
 Depends:
  ${misc:Depends},
  ${shlibs:Depends},
@@ -48,3 +95,230 @@ Description: incremental parsing system for programming tools
  Tree-sitter is a parser generator tool and an incremental parsing library. It
  can build a concrete syntax tree for a source file and efficiently update the
  syntax tree as the source file is edited.
+
+Package: librust-tree-sitter-dev
+Section: rust
+Architecture: any
+Multi-Arch: same
+Depends:
+ librust-cc-1+default-dev (>= 1.0.95),
+ librust-regex-1+default-dev (>= 1.10.4),
+ rustc (>= 1.65),
+ ${misc:Depends},
+Provides:
+ librust-tree-sitter+default-dev (= ${binary:Version}),
+ librust-tree-sitter-0+default-dev (= ${binary:Version}),
+ librust-tree-sitter-0-dev (= ${binary:Version}),
+ librust-tree-sitter-0.22+default-dev (= ${binary:Version}),
+ librust-tree-sitter-0.22-dev (= ${binary:Version}),
+ librust-tree-sitter-0.22.6+default-dev (= ${binary:Version}),
+ librust-tree-sitter-0.22.6-dev (= ${binary:Version}),
+Description: bindings to the tree-sitter parsing library - Rust source code
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the source for the Rust tree-sitter crate,
+ packaged for use with cargo and dh-cargo.
+
+Package: librust-tree-sitter-cli-dev
+Section: rust
+Architecture: any
+Multi-Arch: same
+Depends:
+ librust-ansi-term-0.12+default-dev (>= 0.12.1),
+ librust-anstyle-1+default-dev (>= 1.0.4),
+ librust-anyhow-1+default-dev (>= 1.0.82),
+ librust-clap-4+cargo-dev (>= 4.4.18),
+ librust-clap-4+derive-dev (>= 4.4.18),
+ librust-clap-4+env-dev (>= 4.4.18),
+ librust-clap-4+help-dev (>= 4.4.18),
+ librust-clap-4+unstable-styles-dev (>= 4.4.18),
+ librust-ctrlc-3+termination-dev (>= 3.4.2),
+ librust-difference-2+default-dev (>= 2.0.0),
+ librust-dirs-5+default-dev (>= 5.0.1),
+ librust-filetime-0.2+default-dev (>= 0.2.23),
+ librust-glob-0.3+default-dev (>= 0.3.1),
+ librust-heck-0.4+default-dev,
+ librust-html-escape-0.2+default-dev (>= 0.2.12),
+ librust-indexmap-2+default-dev (>= 2.2.6),
+ librust-indoc-2+default-dev (>= 2.0.5),
+ librust-lazy-static-1+default-dev (>= 1.4.0),
+ librust-log-0.4+std-dev (>= 0.4.21),
+ librust-memchr-2+default-dev (>= 2.7.1),
+ librust-regex-1+default-dev (>= 1.10.4),
+ librust-regex-syntax-0.8+default-dev (>= 0.8.2),
+ librust-rustc-hash-1+default-dev (>= 1.1.0),
+ librust-semver-1+default-dev (>= 1.0.21),
+ librust-serde-1+derive-dev (>= 1.0.198),
+ librust-serde-derive-1+default-dev (>= 1.0.197),
+ librust-serde-json-1+preserve-order-dev (>= 1.0.116),
+ librust-smallbitvec-2+default-dev (>= 2.5.1),
+ librust-tiny-http-0.12+default-dev (>= 0.12.0),
+ librust-tree-sitter-0.22+default-dev (>= 0.22.6),
+ librust-tree-sitter-config-0.22+default-dev (>= 0.22.6),
+ librust-tree-sitter-highlight-0.22+default-dev (>= 0.22.6),
+ librust-tree-sitter-loader-0.22+default-dev (>= 0.22.6),
+ librust-tree-sitter-tags-0.22+default-dev (>= 0.22.6),
+ librust-walkdir-2+default-dev (>= 2.5.0),
+ librust-webbrowser-dev (>= 0.8),
+ rustc (>= 1.74.1),
+ ${misc:Depends},
+Provides:
+ librust-tree-sitter-cli+default-dev (= ${binary:Version}),
+ librust-tree-sitter-cli-0+default-dev (= ${binary:Version}),
+ librust-tree-sitter-cli-0-dev (= ${binary:Version}),
+ librust-tree-sitter-cli-0.22+default-dev (= ${binary:Version}),
+ librust-tree-sitter-cli-0.22-dev (= ${binary:Version}),
+ librust-tree-sitter-cli-0.22.6+default-dev (= ${binary:Version}),
+ librust-tree-sitter-cli-0.22.6-dev (= ${binary:Version}),
+Description: command-line for Tree-sitter parsers - Rust source code
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the source for the Rust tree-sitter-cli crate,
+ packaged for use with cargo and dh-cargo.
+
+Package: librust-tree-sitter-config-dev
+Section: rust
+Architecture: any
+Multi-Arch: same
+Depends:
+ librust-anyhow-1+default-dev (>= 1.0.82),
+ librust-dirs-5+default-dev (>= 5.0.1),
+ librust-serde-1+derive-dev (>= 1.0.198),
+ librust-serde-json-1+preserve-order-dev (>= 1.0.116),
+ rustc (>= 1.74.1),
+ ${misc:Depends},
+Provides:
+ librust-tree-sitter-config+default-dev (= ${binary:Version}),
+ librust-tree-sitter-config-0+default-dev (= ${binary:Version}),
+ librust-tree-sitter-config-0-dev (= ${binary:Version}),
+ librust-tree-sitter-config-0.22+default-dev (= ${binary:Version}),
+ librust-tree-sitter-config-0.22-dev (= ${binary:Version}),
+ librust-tree-sitter-config-0.22.6+default-dev (= ${binary:Version}),
+ librust-tree-sitter-config-0.22.6-dev (= ${binary:Version}),
+Description: user configuration of tree-sitter's CLI programs - Rust source code
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the source for the Rust tree-sitter-config crate,
+ packaged for use with cargo and dh-cargo.
+
+Package: librust-tree-sitter-highlight-dev
+Section: rust
+Architecture: any
+Multi-Arch: same
+Depends:
+ librust-lazy-static-1+default-dev (>= 1.4.0),
+ librust-regex-1+default-dev (>= 1.10.4),
+ librust-thiserror-1+default-dev (>= 1.0.59),
+ librust-tree-sitter-0.22+default-dev (>= 0.22.6),
+ rustc (>= 1.74.1),
+ ${misc:Depends},
+Provides:
+ librust-tree-sitter-highlight+default-dev (= ${binary:Version}),
+ librust-tree-sitter-highlight-0+default-dev (= ${binary:Version}),
+ librust-tree-sitter-highlight-0-dev (= ${binary:Version}),
+ librust-tree-sitter-highlight-0.22+default-dev (= ${binary:Version}),
+ librust-tree-sitter-highlight-0.22-dev (= ${binary:Version}),
+ librust-tree-sitter-highlight-0.22.6+default-dev (= ${binary:Version}),
+ librust-tree-sitter-highlight-0.22.6-dev (= ${binary:Version}),
+Description: perform syntax highlighting with tree-sitter - Rust source code
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the source for the Rust tree-sitter-highlight crate,
+ packaged for use with cargo and dh-cargo.
+
+Package: librust-tree-sitter-loader-dev
+Section: rust
+Architecture: any
+Multi-Arch: same
+Depends:
+ librust-anyhow-1+default-dev (>= 1.0.82),
+ librust-cc-1+default-dev (>= 1.0.83),
+ librust-dirs-5+default-dev (>= 5.0.1),
+ librust-fs4-0.11+default-dev (>= 0.11.0),
+ librust-indoc-2+default-dev (>= 2.0.5),
+ librust-libloading-0.8+default-dev (>= 0.8.3),
+ librust-once-cell-1+default-dev (>= 1.19.0),
+ librust-regex-1+default-dev (>= 1.10.4),
+ librust-serde-1+derive-dev (>= 1.0.198),
+ librust-serde-json-1+preserve-order-dev (>= 1.0.116),
+ librust-tempfile-3+default-dev (>= 3.10.1),
+ librust-tree-sitter-0.22+default-dev (>= 0.22.6),
+ librust-tree-sitter-highlight-0.22+default-dev (>= 0.22.6),
+ librust-tree-sitter-tags-0.22+default-dev (>= 0.22.6),
+ rustc (>= 1.74.1),
+ ${misc:Depends},
+Provides:
+ librust-tree-sitter-loader+default-dev (= ${binary:Version}),
+ librust-tree-sitter-loader-0+default-dev (= ${binary:Version}),
+ librust-tree-sitter-loader-0-dev (= ${binary:Version}),
+ librust-tree-sitter-loader-0.22+default-dev (= ${binary:Version}),
+ librust-tree-sitter-loader-0.22-dev (= ${binary:Version}),
+ librust-tree-sitter-loader-0.22.6+default-dev (= ${binary:Version}),
+ librust-tree-sitter-loader-0.22.6-dev (= ${binary:Version}),
+Description: locates, builds, and loads tree-sitter grammars - Rust source code
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the source for the Rust tree-sitter-loader crate,
+ packaged for use with cargo and dh-cargo.
+
+Package: librust-tree-sitter-tags-dev
+Section: rust
+Architecture: any
+Multi-Arch: same
+Depends:
+ librust-memchr-2+default-dev (>= 2.7.2),
+ librust-regex-1+default-dev (>= 1.10.4),
+ librust-thiserror-1+default-dev (>= 1.0.59),
+ librust-tree-sitter-0.22+default-dev (>= 0.22.6),
+ rustc (>= 1.74.1),
+ ${misc:Depends},
+Provides:
+ librust-tree-sitter-tags+default-dev (= ${binary:Version}),
+ librust-tree-sitter-tags-0+default-dev (= ${binary:Version}),
+ librust-tree-sitter-tags-0-dev (= ${binary:Version}),
+ librust-tree-sitter-tags-0.22+default-dev (= ${binary:Version}),
+ librust-tree-sitter-tags-0.22-dev (= ${binary:Version}),
+ librust-tree-sitter-tags-0.22.6+default-dev (= ${binary:Version}),
+ librust-tree-sitter-tags-0.22.6-dev (= ${binary:Version}),
+Description: library for extracting tag information - Rust source code
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the source for the Rust tree-sitter-tags crate,
+ packaged for use with cargo and dh-cargo.
+
+Package: tree-sitter-cli
+Section: devel
+Architecture: any
+Multi-Arch: allowed
+Depends:
+ ${misc:Depends},
+ ${shlibs:Depends},
+Built-Using:
+ ${cargo:Built-Using},
+Static-Built-Using:
+ ${cargo:Static-Built-Using},
+Recommends:
+# Disable until playground command is enabled
+# emscripten,
+ gcc | c-compiler,
+ node-gyp,
+ nodejs,
+Description: command-line for Tree-sitter parsers
+ Tree-sitter is a parser generator tool and an incremental parsing library. It
+ can build a concrete syntax tree for a source file and efficiently update the
+ syntax tree as the source file is edited.
+ .
+ This package contains the tree-sitter-cli program, which is used to help
+ generate, build, and test tree-sitter parsers.

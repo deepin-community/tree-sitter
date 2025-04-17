@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:30:33 -0700
+Subject: Relax memchr dependency to 2.7.1
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 81097b5..903b42f 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -64,7 +64,7 @@ indoc = "2.0.5"
+ lazy_static = "1.4.0"
+ libloading = "0.8.3"
+ log = { version = "0.4.21", features = ["std"] }
+-memchr = "2.7.2"
++memchr = "2.7.1"
+ once_cell = "1.19.0"
+ pretty_assertions = "1.4.0"
+ rand = "0.8.5"

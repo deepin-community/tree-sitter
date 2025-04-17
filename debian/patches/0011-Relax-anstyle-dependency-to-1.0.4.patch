@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sun, 11 Aug 2024 00:28:02 -0700
+Subject: Relax anstyle dependency to 1.0.4
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 780abee..0ecb634 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -39,7 +39,7 @@ strip = false
+ 
+ [workspace.dependencies]
+ ansi_term = "0.12.1"
+-anstyle = "1.0.6"
++anstyle = "1.0.4"
+ anyhow = "1.0.82"
+ cc = "1.0.95"
+ clap = { version = "4.4.18", features = [

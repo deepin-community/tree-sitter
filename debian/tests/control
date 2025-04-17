@@ -1,0 +1,150 @@
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-dev:@,
+Depends:
+ dh-rust,
+ librust-bindgen-0.71+default-dev,
+ librust-tree-sitter-dev,
+ rustc (>= 1.65),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-dev:default,
+Depends:
+ dh-rust,
+ librust-tree-sitter-dev,
+ rustc (>= 1.65),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-dev:,
+Depends:
+ dh-rust,
+ librust-tree-sitter-dev,
+ rustc (>= 1.65),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-config 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-config-dev:@,
+Depends:
+ dh-rust,
+ librust-tree-sitter-config-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-config 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-config-dev:default,
+Depends:
+ dh-rust,
+ librust-tree-sitter-config-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-config 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-config-dev:,
+Depends:
+ dh-rust,
+ librust-tree-sitter-config-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-highlight 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-highlight-dev:@,
+Depends:
+ dh-rust,
+ librust-tree-sitter-highlight-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-highlight 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-highlight-dev:default,
+Depends:
+ dh-rust,
+ librust-tree-sitter-highlight-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-highlight 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-highlight-dev:,
+Depends:
+ dh-rust,
+ librust-tree-sitter-highlight-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-loader 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-loader-dev:@,
+Depends:
+ dh-rust,
+ librust-tree-sitter-loader-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-loader 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-loader-dev:default,
+Depends:
+ dh-rust,
+ librust-tree-sitter-loader-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-loader 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-loader-dev:,
+Depends:
+ dh-rust,
+ librust-tree-sitter-loader-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-tags 0.22.6 --all-targets --all-features
+Features:
+ test-name=librust-tree-sitter-tags-dev:@,
+Depends:
+ dh-rust,
+ librust-tree-sitter-tags-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-tags 0.22.6 --all-targets
+Features:
+ test-name=librust-tree-sitter-tags-dev:default,
+Depends:
+ dh-rust,
+ librust-tree-sitter-tags-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,
+
+Test-Command: /usr/share/dh-rust/bin/cargo-auto-test tree-sitter-tags 0.22.6 --all-targets --no-default-features
+Features:
+ test-name=librust-tree-sitter-tags-dev:,
+Depends:
+ dh-rust,
+ librust-tree-sitter-tags-dev,
+ rustc (>= 1.74.1),
+Restrictions:
+ allow-stderr,

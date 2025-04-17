@@ -1,0 +1,34 @@
+From: ObserverOfTime <chronobserver@disroot.org>
+Date: Thu, 18 Apr 2024 15:09:22 +0300
+Subject: build(lib): include the minor in the soname
+
+(cherry picked from commit f9c4cb69ef72ca2cbf9d6d553863b6f69b451ec0)
+---
+ Makefile | 12 ++++++------
+ 1 file changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/Makefile b/Makefile
+index e021e87..b8146e3 100644
+--- a/Makefile
++++ b/Makefile
+@@ -32,14 +32,14 @@ ifeq ($(OS),Windows_NT)
+ 	$(error "Windows is not supported")
+ else ifeq ($(shell uname),Darwin)
+ 	SOEXT = dylib
+-	SOEXTVER_MAJOR = $(SONAME_MAJOR).dylib
+-	SOEXTVER = $(SONAME_MAJOR).$(SONAME_MINOR).dylib
+-	LINKSHARED += -dynamiclib -Wl,-install_name,$(LIBDIR)/libtree-sitter.$(SONAME_MAJOR).dylib
++	SOEXTVER_MAJOR = $(SONAME_MAJOR).$(SOEXT)
++	SOEXTVER = $(SONAME_MAJOR).$(SONAME_MINOR).$(SOEXT)
++	LINKSHARED += -dynamiclib -Wl,-install_name,$(LIBDIR)/libtree-sitter.$(SOEXTVER)
+ else
+ 	SOEXT = so
+-	SOEXTVER_MAJOR = so.$(SONAME_MAJOR)
+-	SOEXTVER = so.$(SONAME_MAJOR).$(SONAME_MINOR)
+-	LINKSHARED += -shared -Wl,-soname,libtree-sitter.so.$(SONAME_MAJOR)
++	SOEXTVER_MAJOR = $(SOEXT).$(SONAME_MAJOR)
++	SOEXTVER = $(SOEXT).$(SONAME_MAJOR).$(SONAME_MINOR)
++	LINKSHARED += -shared -Wl,-soname,libtree-sitter.$(SOEXTVER)
+ endif
+ ifneq ($(filter $(shell uname),FreeBSD NetBSD DragonFly),)
+ 	PCLIBDIR := $(PREFIX)/libdata/pkgconfig

@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sun, 11 Aug 2024 00:26:05 -0700
+Subject: Relax heck dependency to 0.4.0
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 2abf046..780abee 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -57,7 +57,7 @@ filetime = "0.2.23"
+ fs4 = "0.8.2"
+ git2 = "0.18.3"
+ glob = "0.3.1"
+-heck = "0.5.0"
++heck = "0.4.0"
+ html-escape = "0.2.12"
+ indexmap = "2.2.6"
+ indoc = "2.0.5"
