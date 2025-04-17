@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:31:10 -0700
+Subject: Relax semver dependency to 1.0.21
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 3642efc..0da084d 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -71,7 +71,7 @@ rand = "0.8.5"
+ regex = "1.10.4"
+ regex-syntax = "0.8.2"
+ rustc-hash = "1.1.0"
+-semver = "1.0.22"
++semver = "1.0.21"
+ serde = { version = "1.0.198", features = ["derive"] }
+ serde_derive = "1.0.197"
+ serde_json = { version = "1.0.116", features = ["preserve_order"] }

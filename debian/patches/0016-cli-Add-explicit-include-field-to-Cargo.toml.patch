@@ -1,0 +1,25 @@
+From: James McCoy <jamessan@debian.org>
+Date: Thu, 23 Jan 2025 20:25:30 -0500
+Subject: cli: Add explicit include field to Cargo.toml
+
+If "cargo package" is used from an archive of the cli source, then templates/.editorconfig will not be included in the crate, since it is a hidden file.
+
+This breaks the build because the generate/grammar_files.rs includes the file.
+
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ cli/Cargo.toml | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/cli/Cargo.toml b/cli/Cargo.toml
+index f53c944..02cc156 100644
+--- a/cli/Cargo.toml
++++ b/cli/Cargo.toml
+@@ -11,6 +11,7 @@ repository.workspace = true
+ license.workspace = true
+ keywords.workspace = true
+ categories.workspace = true
++include = ["/**"]
+ 
+ [[bin]]
+ name = "tree-sitter"

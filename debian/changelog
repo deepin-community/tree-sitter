@@ -1,3 +1,62 @@
+tree-sitter (0.22.6-6) unstable; urgency=medium
+
+  * Upload to unstable
+  * Add Breaks/Replaces for libtree-sitter0
+
+ -- James McCoy <jamessan@debian.org>  Sun, 16 Mar 2025 16:14:16 -0400
+
+tree-sitter (0.22.6-5) experimental; urgency=medium
+
+  * Remove emscripten Recommends until playground command is enabled
+    (Closes: #1093836)
+  * Backport patch to include the minor version in the SONAME so the ABI break
+    is properly reflected. (Closes: #1100171)
+  * Rename libtree-sitter0 to libtree-sitter0.22 for ABI bump
+
+ -- James McCoy <jamessan@debian.org>  Sat, 15 Mar 2025 07:32:12 -0400
+
+tree-sitter (0.22.6-4) unstable; urgency=medium
+
+  * Upload to unstable
+  * Revert "Switch package branch to debian/experimental"
+  * Add salsa-ci config
+  * autopkgtests: Bump bindgen to 0.71
+  * Declare compliance with Policy 4.7.2, no changes needed
+
+ -- James McCoy <jamessan@debian.org>  Sat, 08 Mar 2025 13:43:40 -0500
+
+tree-sitter (0.22.6-3) experimental; urgency=medium
+
+  * Switch autopkgtest from dh-cargo to dh-rust
+  * cli: Add explicit include field to Cargo.toml to work around cargo's
+    behavior of excluding hidden files when "cargo package" is run outside of
+    a git repo. (Closes: #1093188)
+
+ -- James McCoy <jamessan@debian.org>  Thu, 23 Jan 2025 21:14:25 -0500
+
+tree-sitter (0.22.6-2) experimental; urgency=medium
+
+  * Add librust-tree-sitter-cli-dev package (Closes: #1093038). This was
+    unintentionally dropped when collapsing the independent rust-tree-sitter-*
+    packages into src:tree-sitter.
+
+ -- James McCoy <jamessan@debian.org>  Wed, 15 Jan 2025 19:22:14 -0500
+
+tree-sitter (0.22.6-1) experimental; urgency=medium
+
+  * New upstream release (Closes: #1082544)
+    + Fix possible infinite loop when a tree has zero-width tokens (Closes:
+      #1052020)
+  * Build librust-tree-sitter{,-tags,-highlight,-loader,-config}-dev and
+    tree-sitter-cli packages here instead of from their own source packages
+  * Specify PREFIX and LIBDIR for dh_auto_build
+  * Update libtree-sitter0.symbols
+  * Switch package branch to debian/experimental
+  * Declare compliance with Policy 4.7.0, no changes needed
+  * Run wrap-and-sort -ast
+
+ -- James McCoy <jamessan@debian.org>  Fri, 06 Dec 2024 15:48:14 -0500
+
 tree-sitter (0.20.8-2) unstable; urgency=medium
 
   * Upload to unstable

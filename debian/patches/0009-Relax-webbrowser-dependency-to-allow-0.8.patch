@@ -1,0 +1,23 @@
+From: James McCoy <jamessan@debian.org>
+Date: Sat, 10 Aug 2024 23:32:30 -0700
+Subject: Relax webbrowser dependency to allow 0.8
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 0d01c3a..2abf046 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -82,7 +82,7 @@ tiny_http = "0.12.0"
+ toml = "0.8.12"
+ unindent = "0.2.3"
+ walkdir = "2.5.0"
+-webbrowser = "1.0.0"
++webbrowser = ">= 0.8, < 2"
+ 
+ tree-sitter = { version = "0.22.6", path = "./lib" }
+ tree-sitter-loader = { version = "0.22.6", path = "./cli/loader" }

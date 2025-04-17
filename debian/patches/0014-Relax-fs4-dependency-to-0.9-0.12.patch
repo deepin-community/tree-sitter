@@ -1,0 +1,40 @@
+From: James McCoy <jamessan@debian.org>
+Date: Tue, 12 Nov 2024 22:16:45 -0500
+Subject: Relax fs4 dependency to >= 0.9, < 0.12
+
+fs4::FileExt moved to fs4::fs_std::FileExt in 0.9, so take upstream's
+patch for that.
+
+Forwarded: not-needed
+Signed-off-by: James McCoy <jamessan@debian.org>
+---
+ Cargo.toml            | 2 +-
+ cli/loader/src/lib.rs | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/Cargo.toml b/Cargo.toml
+index 91dc061..8b57aa5 100644
+--- a/Cargo.toml
++++ b/Cargo.toml
+@@ -54,7 +54,7 @@ ctrlc = { version = "3.4.2", features = ["termination"] }
+ difference = "2.0.0"
+ dirs = "5.0.1"
+ filetime = "0.2.23"
+-fs4 = "0.8.2"
++fs4 = ">= 0.9, < 0.12"
+ git2 = "0.18.3"
+ glob = "0.3.1"
+ heck = "0.4.0"
+diff --git a/cli/loader/src/lib.rs b/cli/loader/src/lib.rs
+index 3371e1f..9b67416 100644
+--- a/cli/loader/src/lib.rs
++++ b/cli/loader/src/lib.rs
+@@ -15,7 +15,7 @@ use std::{
+ };
+ 
+ use anyhow::{anyhow, Context, Error, Result};
+-use fs4::FileExt;
++use fs4::fs_std::FileExt;
+ use indoc::indoc;
+ use libloading::{Library, Symbol};
+ use once_cell::unsync::OnceCell;
